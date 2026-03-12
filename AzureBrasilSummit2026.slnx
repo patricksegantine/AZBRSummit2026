@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Mission.MgmCompleteAnalyzer.Worker/Mission.MgmCompleteAnalyzer.Worker.csproj" />
+    <Project Path="src/Mission.QuizCompleteAnalyzer.Worker/Mission.QuizCompleteAnalyzer.Worker.csproj" />
+    <Project Path="src/Quiz.Benefit.Worker/Quiz.Benefit.Worker.csproj" />
+    <Project Path="src/Quiz.Transactional.Api/Quiz.Transactional.Api.csproj" />
+    <Project Path="src/UserAccount.Api/UserAccount.Api.csproj" />
+  </Folder>
+</Solution>
