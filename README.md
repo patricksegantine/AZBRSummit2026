@@ -147,12 +147,28 @@ Worker scaffold responsável por processar benefícios de gamificação para usu
 
 ## Configuração
 
-Cada projeto possui seu próprio `appsettings.json`. Os valores abaixo devem ser substituídos antes de executar:
+### 1. Infraestrutura Azure
+
+Antes de executar a solução, é necessário provisionar os recursos Azure (Resource Group, Service Bus Namespace, tópicos, filas, assinaturas e filtros).
+
+→ **[Guia completo de setup da infraestrutura Azure](docs/azure-setup.md)**
+
+O guia cobre, passo a passo via Azure CLI:
+- Criação do Resource Group e Service Bus Namespace
+- Criação das 3 filas de destino
+- Criação dos 2 tópicos
+- Criação das 3 assinaturas com filtros SQL e forwarding automático para filas
+- Como obter a connection string
+- Comandos de verificação e limpeza
+
+### 2. Configuração das Aplicações
+
+Após provisionar a infraestrutura, atualize o `appsettings.json` (ou User Secrets) de cada projeto com os valores obtidos:
 
 ```json
 {
   "ConnectionStrings": {
-    "AzureServiceBus": "Endpoint=sb://your-namespace.servicebus.windows.net/;...",
+    "AzureServiceBus": "Endpoint=sb://sb-azbrsummit2026.servicebus.windows.net/;...",
     "PostgreSQL": "Host=localhost;Port=5432;Database=user_account_db;Username=postgres;Password=..."
   }
 }
@@ -166,6 +182,7 @@ Cada projeto possui seu próprio `appsettings.json`. Os valores abaixo devem ser
 
 | Documento | Descrição |
 |---|---|
+| [Setup da Infraestrutura Azure](docs/azure-setup.md) | Passo a passo para criar todos os recursos Azure via CLI |
 | [Arquitetura Geral](docs/architecture.md) | Diagrama de componentes e responsabilidades |
 | [Topologia do Service Bus](docs/servicebus-topology.md) | Tópicos, assinaturas, filtros e filas |
 | [Fluxo — Criar Conta](docs/flow-create-account.md) | Sequência completa do cadastro de usuário |
