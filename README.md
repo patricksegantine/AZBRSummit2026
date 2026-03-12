@@ -189,3 +189,4 @@ Após provisionar a infraestrutura, atualize o `appsettings.json` (ou User Secre
 | [Fluxo — Responder Quiz](docs/flow-answer-quiz.md) | Sequência + cálculo de score |
 | [Fluxo — Missão Quiz](docs/flow-mission-quiz-completion.md) | Conclusão de missão via worker |
 | [Fluxo — Missão MGM](docs/flow-mission-mgm-completion.md) | Jornada completa de indicação MGM |
+| [Referências e Recursos](docs/references.md) | Documentação oficial, tutoriais e conceitos-chave do Azure Service Bus |
