@@ -1,5 +1,5 @@
 using Azure.Messaging.ServiceBus;
-using Mission.QuizCompleteAnalyzer.Worker.Infrastructure.Data;
+using Mission.QuizCompleteAnalyzer.Worker.Handlers;
 using Mission.QuizCompleteAnalyzer.Worker.Messaging;
 using System.Text.Json;
 
@@ -7,7 +7,7 @@ namespace Mission.QuizCompleteAnalyzer.Worker;
 
 public class Worker(
     ServiceBusProcessor processor,
-    MissionStore missionStore,
+    QuizCompletionHandler completionHandler,
     ILogger<Worker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -39,44 +39,41 @@ public class Worker(
             return;
         }
 
+        // MissionId is guaranteed by the Service Bus subscription filter,
+        // but we validate defensively in case the message arrives via another path.
         if (!args.Message.ApplicationProperties.TryGetValue("MissionId", out var missionIdRaw)
             || !Guid.TryParse(missionIdRaw?.ToString(), out var missionId))
         {
             logger.LogWarning(
-                "Message has no valid MissionId property. Skipping. QuizId: {QuizId} | UserId: {UserId}",
+                "Message is missing a valid MissionId property. QuizId: {QuizId} | UserId: {UserId}",
                 message.QuizId, message.UserId);
-            await args.CompleteMessageAsync(args.Message, args.CancellationToken);
+            await args.DeadLetterMessageAsync(args.Message, "MissingMissionId", "ApplicationProperty 'MissionId' is absent or invalid.", args.CancellationToken);
             return;
         }
 
-        var mission = missionStore.GetById(missionId);
-        if (mission is null)
+        var command = new QuizCompletionCommand(
+            UserId: message.UserId,
+            MissionId: missionId,
+            QuizAnswerId: message.QuizId,
+            UserScore: message.UserScore,
+            QuizScore: message.QuizScore,
+            UserGotAward: message.UserGotAward
+        );
+
+        var result = completionHandler.Handle(command);
+
+        if (!result.IsSuccess)
         {
             logger.LogWarning(
-                "Mission {MissionId} not found. QuizId: {QuizId} | UserId: {UserId}",
-                missionId, message.QuizId, message.UserId);
-            await args.DeadLetterMessageAsync(args.Message, "MissionNotFound", $"Mission '{missionId}' does not exist.", args.CancellationToken);
+                "Quiz completion failed. UserId: {UserId} | MissionId: {MissionId} | QuizId: {QuizId} | Reason: {Reason}",
+                message.UserId, missionId, message.QuizId, result.FailureReason);
+            await args.DeadLetterMessageAsync(args.Message, result.FailureCode, result.FailureReason, args.CancellationToken);
             return;
         }
-
-        if (!message.UserGotAward)
-        {
-            logger.LogInformation(
-                "User {UserId} did not reach minimum score for Quiz {QuizId}. Mission {MissionId} remains {Status}. UserScore: {UserScore}/{QuizScore}",
-                message.UserId, message.QuizId, missionId, mission.Status, message.UserScore, message.QuizScore);
-            await args.CompleteMessageAsync(args.Message, args.CancellationToken);
-            return;
-        }
-
-        missionStore.Complete(missionId);
 
         logger.LogInformation(
-            "Mission {MissionId} '{MissionName}' completed for User {UserId}. QuizId: {QuizId} | UserScore: {UserScore}/{QuizScore}",
-            missionId, mission.Name, message.UserId, message.QuizId, message.UserScore, message.QuizScore);
-
-        // TODO: dispatch email/push notification to user congratulating them on completing the mission.
-        // Suggested payload: { UserId, MissionId, MissionName, QuizId, UserScore, QuizScore }
-        // Channels: email via SendGrid/Communication Services, push via Azure Notification Hubs.
+            "UserMission {UserMissionId} created: Quiz mission {MissionId} completed by user {UserId} | QuizId: {QuizId} | UserScore: {UserScore}/{QuizScore}",
+            result.UserMission!.Id, missionId, message.UserId, message.QuizId, message.UserScore, message.QuizScore);
 
         await args.CompleteMessageAsync(args.Message, args.CancellationToken);
     }

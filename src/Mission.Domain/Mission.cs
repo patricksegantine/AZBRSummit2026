@@ -1,6 +1,6 @@
-namespace Mission.QuizCompleteAnalyzer.Worker.Domain;
+namespace Mission.Domain;
 
-public enum ChallengeType { Quiz, MGM, Training }
+public enum MissionType { Quiz, MGM, Training }
 
 public enum MissionStatus { Pending, Active, Completed, Cancelled }
 
@@ -11,7 +11,7 @@ public class Mission
     public string Description { get; init; } = string.Empty;
     public Guid? MediaId { get; init; }
     public Guid? CampaignId { get; init; }
-    public ChallengeType Type { get; init; }
+    public MissionType Type { get; init; }
     public MissionStatus Status { get; set; }
     public DateTime CreatedAt { get; init; }
     public DateTime UpdatedAt { get; set; }

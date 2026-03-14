@@ -11,4 +11,10 @@
     <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.20.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.3" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mission.Domain\Mission.Domain.csproj" />
+    <ProjectReference Include="..\Mission.Infrastructure\Mission.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>

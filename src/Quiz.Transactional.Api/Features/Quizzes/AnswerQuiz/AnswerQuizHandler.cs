@@ -35,8 +35,8 @@ public class AnswerQuizHandler(QuizStore store, ServiceBusPublisher publisher)
 
         var payload = new
         {
-            QuizId = quizId,
             request.UserId,
+            QuizAnswerId = quizId,
             QuizScore = quizScore,
             UserScore = userScore,
             UserGotAward = userGotAward

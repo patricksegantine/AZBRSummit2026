@@ -1,9 +1,16 @@
 <Solution>
-  <Folder Name="/src/">
+  <Folder Name="/src/" />
+  <Folder Name="/src/Mission/">
+    <Project Path="src/Mission.Domain/Mission.Domain.csproj" />
+    <Project Path="src/Mission.Infrastructure/Mission.Infrastructure.csproj" />
     <Project Path="src/Mission.MgmCompleteAnalyzer.Worker/Mission.MgmCompleteAnalyzer.Worker.csproj" />
     <Project Path="src/Mission.QuizCompleteAnalyzer.Worker/Mission.QuizCompleteAnalyzer.Worker.csproj" />
+  </Folder>
+  <Folder Name="/src/Quiz/">
     <Project Path="src/Quiz.Benefit.Worker/Quiz.Benefit.Worker.csproj" />
     <Project Path="src/Quiz.Transactional.Api/Quiz.Transactional.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/User Account/">
     <Project Path="src/UserAccount.Api/UserAccount.Api.csproj" />
   </Folder>
 </Solution>

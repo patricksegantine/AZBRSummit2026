@@ -13,6 +13,7 @@ public class UserAccountEntityConfiguration : IEntityTypeConfiguration<UserAccou
         builder.Property(x => x.Id).ValueGeneratedOnAdd();
         builder.Property(x => x.Name).IsRequired().HasMaxLength(200);
         builder.Property(x => x.Email).IsRequired().HasMaxLength(300);
+        builder.Property(x => x.Cpf).IsRequired().HasMaxLength(14);
         builder.Property(x => x.CreatedAt).IsRequired();
         builder.Property(x => x.DataDictionary)
             .HasConversion(

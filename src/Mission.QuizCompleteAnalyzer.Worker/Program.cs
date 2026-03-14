@@ -1,6 +1,7 @@
 using Azure.Messaging.ServiceBus;
+using Mission.Infrastructure.Data;
 using Mission.QuizCompleteAnalyzer.Worker;
-using Mission.QuizCompleteAnalyzer.Worker.Infrastructure.Data;
+using Mission.QuizCompleteAnalyzer.Worker.Handlers;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -20,6 +21,8 @@ builder.Services.AddSingleton(sp =>
 });
 
 builder.Services.AddSingleton<MissionStore>();
+builder.Services.AddSingleton<UserMissionStore>();
+builder.Services.AddSingleton<QuizCompletionHandler>();
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();

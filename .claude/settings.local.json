@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet new:*)",
+      "Bash(dotnet sln:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet add:*)",
+      "Bash(rm /c/Users/patri/source/repos/azbrsummit2026/src/UserAccount.Api/UserAccount.Api.http)",
+      "Bash(mkdir -p /c/Users/patri/source/repos/azbrsummit2026/src/UserAccount.Api/Features/Accounts/CreateAccount)",
+      "Bash(mkdir -p /c/Users/patri/source/repos/azbrsummit2026/src/UserAccount.Api/Infrastructure/Persistence)",
+      "Bash(mkdir -p /c/Users/patri/source/repos/azbrsummit2026/src/UserAccount.Api/Infrastructure/Messaging)",
+      "Bash(git commit:*)"
+    ]
+  }
+}

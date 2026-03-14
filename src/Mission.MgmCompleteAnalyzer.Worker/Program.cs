@@ -1,6 +1,7 @@
 using Azure.Messaging.ServiceBus;
 using Mission.MgmCompleteAnalyzer.Worker;
-using Mission.MgmCompleteAnalyzer.Worker.Infrastructure.Data;
+using Mission.MgmCompleteAnalyzer.Worker.Handlers;
+using Mission.Infrastructure.Data;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -20,6 +21,9 @@ builder.Services.AddSingleton(sp =>
 });
 
 builder.Services.AddSingleton<MissionStore>();
+builder.Services.AddSingleton<UserMissionStore>();
+builder.Services.AddSingleton<IndicationTokenStore>();
+builder.Services.AddSingleton<MgmCompletionHandler>();
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();

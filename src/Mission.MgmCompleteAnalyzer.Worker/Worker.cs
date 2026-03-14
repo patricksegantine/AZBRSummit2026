@@ -1,5 +1,5 @@
 using Azure.Messaging.ServiceBus;
-using Mission.MgmCompleteAnalyzer.Worker.Infrastructure.Data;
+using Mission.MgmCompleteAnalyzer.Worker.Handlers;
 using Mission.MgmCompleteAnalyzer.Worker.Messaging;
 using System.Text.Json;
 
@@ -7,7 +7,7 @@ namespace Mission.MgmCompleteAnalyzer.Worker;
 
 public class Worker(
     ServiceBusProcessor processor,
-    MissionStore missionStore,
+    MgmCompletionHandler completionHandler,
     ILogger<Worker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -19,7 +19,7 @@ public class Worker(
 
         await Task.Delay(Timeout.Infinite, stoppingToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 
-        await processor.StopProcessingAsync();
+        await processor.StopProcessingAsync(stoppingToken);
         await processor.DisposeAsync();
     }
 
@@ -39,50 +39,42 @@ public class Worker(
             return;
         }
 
-        // Both CampaignId and IndicationToken are guaranteed by the Service Bus subscription filter,
+        // MissionId and IndicationToken are guaranteed by the Service Bus subscription filter,
         // but we validate defensively in case the message arrives via another path.
-        if (!args.Message.ApplicationProperties.TryGetValue("CampaignId", out var campaignIdRaw)
-            || !Guid.TryParse(campaignIdRaw?.ToString(), out var campaignId))
-        {
-            logger.LogWarning(
-                "Message is missing a valid CampaignId property. AccountId: {AccountId}",
-                message.Id);
-            await args.DeadLetterMessageAsync(args.Message, "MissingCampaignId", "ApplicationProperty 'CampaignId' is absent or invalid.", args.CancellationToken);
-            return;
-        }
+        args.Message.ApplicationProperties.TryGetValue("MissionId", out var missionIdRaw);
+        Guid.TryParse(missionIdRaw?.ToString(), out var missionId);
 
         if (!args.Message.ApplicationProperties.TryGetValue("IndicationToken", out var indicationTokenRaw)
             || string.IsNullOrWhiteSpace(indicationTokenRaw?.ToString()))
         {
             logger.LogWarning(
-                "Message is missing a valid IndicationToken property. AccountId: {AccountId} | CampaignId: {CampaignId}",
-                message.Id, campaignId);
+                "Message is missing a valid IndicationToken property. AccountId: {AccountId} | MissionId: {MissionId}",
+                message.Id, missionId);
             await args.DeadLetterMessageAsync(args.Message, "MissingIndicationToken", "ApplicationProperty 'IndicationToken' is absent or empty.", args.CancellationToken);
             return;
         }
 
-        var indicationToken = indicationTokenRaw.ToString()!;
+        var command = new MgmCompletionCommand(
+            UserId: message.Id,
+            UserEmail: message.Email,
+            MissionId: missionId,
+            IndicationToken: indicationTokenRaw.ToString()!
+        );
 
-        var mission = missionStore.GetByCampaignId(campaignId);
-        if (mission is null)
+        var result = completionHandler.Handle(command);
+
+        if (!result.IsSuccess)
         {
             logger.LogWarning(
-                "No active MGM mission found for CampaignId {CampaignId}. AccountId: {AccountId}",
-                campaignId, message.Id);
-            await args.DeadLetterMessageAsync(args.Message, "MissionNotFound", $"No active MGM mission for campaign '{campaignId}'.", args.CancellationToken);
+                "MGM completion failed. AccountId: {AccountId} | MissionId: {MissionId} | Reason: {Reason}",
+                message.Id, missionId, result.FailureReason);
+            await args.DeadLetterMessageAsync(args.Message, result.FailureCode, result.FailureReason, args.CancellationToken);
             return;
         }
 
-        missionStore.Complete(mission.Id);
-
         logger.LogInformation(
-            "MGM mission {MissionId} '{MissionName}' completed. ReferredAccountId: {AccountId} | ReferredEmail: {Email} | CampaignId: {CampaignId} | IndicationToken: {IndicationToken}",
-            mission.Id, mission.Name, message.Id, message.Email, campaignId, indicationToken);
-
-        // TODO: dispatch email/push notification to the referrer identified by IndicationToken
-        //       congratulating them on completing the MGM mission.
-        // Suggested payload: { IndicationToken, CampaignId, MissionId, MissionName, ReferredAccountId, ReferredEmail }
-        // Channels: email via SendGrid/Communication Services, push via Azure Notification Hubs.
+            "UserMission {UserMissionId} created: MGM mission {MissionId} completed by user {UserId} | Email: {Email} | IndicationToken: {IndicationToken}",
+            result.UserMission!.Id, missionId, message.Id, message.Email, command.IndicationToken);
 
         await args.CompleteMessageAsync(args.Message, args.CancellationToken);
     }

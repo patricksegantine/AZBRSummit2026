@@ -1,9 +1,8 @@
-namespace UserAccount.Api.Features.Accounts.CreateAccount;
+namespace UserAccount.Api.Features.Accounts.UpdateAccount;
 
-public record CreateAccountRequest(
+public record UpdateAccountRequest(
     string Name,
     string Email,
     string PhoneNumber,
-    string? Cpf,
     List<Dictionary<string, string>> DataDictionary
 );
