@@ -19,14 +19,16 @@ As mensagens consumidas por este worker são originadas pelo evento publicado pe
 
 Worker implementado como `BackgroundService` do .NET utilizando o SDK do **Azure Service Bus** (`ServiceBusProcessor`) com controle manual de settlement (`AutoCompleteMessages = false`).
 
+O domínio e a infraestrutura de missões são fornecidos pelos projetos compartilhados:
+- **`Mission.Domain`** — entidades `Mission`, `UserMission` e `IndicationToken`
+- **`Mission.Infrastructure`** — repositórios in-memory (`MissionStore`, `UserMissionStore`) e dados de seed
+
 ```
-Domain/
-└── Mission.cs                        # Entidade de missão com enums ChallengeType e MissionStatus
-Infrastructure/Data/
-└── MissionStore.cs                   # Repositório in-memory com missões Quiz mockadas
+Handlers/
+└── QuizCompletionHandler.cs          # Lógica de negócio: verificação de score e conclusão da missão Quiz
 Messaging/
 └── QuizAnsweredMessage.cs            # Contrato do evento publicado pela Quiz.Transactional.Api
-Worker.cs                             # Consumer: validação, análise de score e conclusão de missão
+Worker.cs                             # Consumer: validação, delegação ao handler e settlement
 ```
 
 ## Fluxo de processamento

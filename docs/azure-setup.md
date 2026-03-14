@@ -28,7 +28,7 @@ SB_NAMESPACE="sb-azbrsummit2026"  # deve ser globalmente único
 SB_SKU="Standard"                 # Standard ou Premium (Topics exigem Standard+)
 
 # Tópicos
-TOPIC_USER_ACCOUNT="user-account-created"
+TOPIC_USER_ACCOUNT="user-account-added-or-updated"
 TOPIC_QUIZ_ANSWERED="quiz-answered"
 
 # Filas
@@ -103,7 +103,7 @@ az servicebus queue create \
 ## 5. Tópicos
 
 ```bash
-# Tópico: user-account-created (publicado pela UserAccount.Api)
+# Tópico: user-account-added-or-updated (publicado pela UserAccount.Api)
 az servicebus topic create \
   --name $TOPIC_USER_ACCOUNT \
   --resource-group $RESOURCE_GROUP \
@@ -118,6 +118,7 @@ az servicebus topic create \
   --max-size 1024
 ```
 
+
 ---
 
 ## 6. Assinaturas e Filtros
@@ -126,7 +127,9 @@ Cada assinatura possui um filtro SQL que inspeciona as `ApplicationProperties` d
 
 > As assinaturas são criadas com `--forward-to` para que as mensagens sejam automaticamente movidas para as filas configuradas. O forwarding dentro do mesmo namespace não requer permissões adicionais.
 
-### 6.1 Tópico `user-account-created`
+![Tópico user-account-added-or-updated no Azure Portal](topic-user-account-added-or-updated.png)
+
+### 6.1 Tópico `user-account-added-or-updated`
 
 #### Assinatura `mgm-filter`
 Encaminha mensagens que possuem **ambas** as propriedades `CampaignId` e `IndicationToken`.
@@ -157,8 +160,10 @@ az servicebus topic subscription rule create \
   --namespace-name $SB_NAMESPACE \
   --topic-name $TOPIC_USER_ACCOUNT \
   --subscription-name $SUB_MGM \
-  --filter-sql-expression "CampaignId IS NOT NULL AND IndicationToken IS NOT NULL"
+  --filter-sql-expression "EventName = 'user-account-created' AND MissionId IS NOT NULL AND IndicationToken IS NOT NULL"
 ```
+
+![Regras de assinatura do tópico user-account-added-or-updated](topic-user-account-added-or-updated-rules.png)
 
 ---
 
@@ -258,7 +263,7 @@ az servicebus topic list \
   --namespace-name $SB_NAMESPACE \
   --query "[].name" -o table
 
-# Listar assinaturas do tópico user-account-created
+# Listar assinaturas do tópico user-account-added-or-updated
 az servicebus topic subscription list \
   --resource-group $RESOURCE_GROUP \
   --namespace-name $SB_NAMESPACE \
@@ -272,7 +277,7 @@ az servicebus topic subscription list \
   --topic-name $TOPIC_QUIZ_ANSWERED \
   --query "[].{Name:name, ForwardTo:forwardTo}" -o table
 
-# Verificar regras de filtro da assinatura mgm-filter
+# Verificar regras de filtro da assinatura mgm-filter (tópico user-account-added-or-updated)
 az servicebus topic subscription rule list \
   --resource-group $RESOURCE_GROUP \
   --namespace-name $SB_NAMESPACE \
@@ -301,7 +306,7 @@ az servicebus topic subscription rule list \
 
 | Name |
 |---|
-| user-account-created |
+| user-account-added-or-updated |
 | quiz-answered |
 
 **Saída esperada das assinaturas com forwarding:**
@@ -319,7 +324,7 @@ az servicebus topic subscription rule list \
 ```mermaid
 graph LR
     subgraph Namespace["Service Bus Namespace: sb-azbrsummit2026"]
-        subgraph T1["Tópico: user-account-created"]
+        subgraph T1["Tópico: user-account-added-or-updated"]
             S1["Subscription: mgm-filter\nSQL: CampaignId IS NOT NULL\nAND IndicationToken IS NOT NULL"]
         end
 

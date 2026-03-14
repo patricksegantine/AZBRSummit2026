@@ -12,20 +12,22 @@ Worker responsável por analisar indicações de novos usuários e determinar a 
 
 ## Origem das mensagens
 
-As mensagens consumidas por este worker são originadas pelo evento publicado pela **UserAccount.Api** no tópico `user-account-created`. O Azure Service Bus aplica um **filtro de assinatura** baseado na presença simultânea das propriedades `CampaignId` e `IndicationToken` nas `ApplicationProperties` e encaminha apenas as mensagens elegíveis para a fila `mgm-user-account-added-analyzer`.
+As mensagens consumidas por este worker são originadas pelos eventos publicados pela **UserAccount.Api** no tópico `user-account-added-or-updated`. O Azure Service Bus aplica um **filtro de assinatura** baseado na presença simultânea das propriedades `CampaignId` e `IndicationToken` nas `ApplicationProperties` e encaminha apenas as mensagens elegíveis para a fila `mgm-user-account-added-analyzer`.
 
 ## Arquitetura
 
 Worker implementado como `BackgroundService` do .NET utilizando o SDK do **Azure Service Bus** (`ServiceBusProcessor`) com controle manual de settlement (`AutoCompleteMessages = false`).
 
+O domínio e a infraestrutura de missões são fornecidos pelos projetos compartilhados:
+- **`Mission.Domain`** — entidades `Mission`, `UserMission` e `IndicationToken`
+- **`Mission.Infrastructure`** — repositórios in-memory (`MissionStore`, `UserMissionStore`, `IndicationTokenStore`) e dados de seed
+
 ```
-Domain/
-└── Mission.cs                        # Entidade de missão com enums ChallengeType e MissionStatus
-Infrastructure/Data/
-└── MissionStore.cs                   # Repositório in-memory com missões MGM mockadas
+Handlers/
+└── MgmCompletionHandler.cs           # Lógica de negócio: lookup e conclusão da missão MGM
 Messaging/
 └── UserAccountAddedMessage.cs        # Contrato do evento publicado pela UserAccount.Api
-Worker.cs                             # Consumer: validação de propriedades, lookup e conclusão de missão
+Worker.cs                             # Consumer: validação de propriedades, delegação ao handler e settlement
 ```
 
 ## Fluxo de processamento

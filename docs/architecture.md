@@ -7,7 +7,7 @@ graph TB
     Client(["👤 Client / Mobile App"])
 
     subgraph APIs["APIs — ASP.NET Core Minimal API"]
-        UA["**UserAccount.Api**\nPOST /accounts"]
+        UA["**UserAccount.Api**\nGET /accounts\nPOST /accounts\nPUT /accounts/{id}"]
         QT["**Quiz.Transactional.Api**\nPOST /quizzes/{id}/answers"]
     end
 
@@ -16,12 +16,17 @@ graph TB
         QS[("In-Memory\nQuizStore")]
     end
 
+    subgraph MissionCtx["Contexto de Missões — Bibliotecas Compartilhadas"]
+        MD["**Mission.Domain**\nMission, UserMission\nIndicationToken"]
+        MI["**Mission.Infrastructure**\nMissionStore, UserMissionStore\nIndicationTokenStore, SeedData"]
+    end
+
     subgraph ASB["Azure Service Bus"]
         direction TB
-        T1["📨 Topic\nuser-account-created"]
+        T1["📨 Topic\nuser-account-added-or-updated"]
         T2["📨 Topic\nquiz-answered"]
 
-        subgraph Subs1["Subscriptions — user-account-created"]
+        subgraph Subs1["Subscriptions — user-account-added-or-updated"]
             S1["🔍 mgm-filter\nCampaignId AND IndicationToken"]
         end
 
@@ -41,11 +46,16 @@ graph TB
         W3["**Quiz.Benefit.Worker**"]
     end
 
-    Client -->|"CreateAccount\n{Name, Email, DataDictionary}"| UA
+    Client -->|"GET /accounts?id=&email=&cpf="| UA
+    Client -->|"POST /accounts\n{Name, Email, PhoneNumber, Cpf, DataDictionary}"| UA
+    Client -->|"PUT /accounts/{id}\n{Name, Email, PhoneNumber, DataDictionary}"| UA
     Client -->|"AnswerQuiz\n{UserId, Answers[], DataDictionary}"| QT
 
     UA -->|"Persist UserAccount"| PG
-    UA -->|"Publish event\n+ props: CampaignId, IndicationToken"| T1
+    UA -->|"Publish event\n+ props: EventName, CampaignId, IndicationToken, MissionId"| T1
+
+    MD --> MI
+    MI --> W1 & W2
 
     QT -->|"Lookup quiz"| QS
     QT -->|"Publish event\n+ prop: MissionId"| T2
@@ -67,8 +77,10 @@ graph TB
 
 | Componente | Tipo | Responsabilidade Principal |
 |---|---|---|
-| `UserAccount.Api` | Minimal API | Cadastro de usuário + publicação de evento de conta criada |
+| `UserAccount.Api` | Minimal API | Gerenciamento de contas (criar, consultar, atualizar) + publicação de eventos |
 | `Quiz.Transactional.Api` | Minimal API | Submissão de respostas + cálculo de score + publicação de resultado |
+| `Mission.Domain` | Class Library | Entidades e value objects do contexto de missões |
+| `Mission.Infrastructure` | Class Library | Repositórios in-memory e seed data do contexto de missões |
 | `Mission.MgmCompleteAnalyzer.Worker` | Background Worker | Detecta indicações MGM e conclui missões Member-Get-Member |
 | `Mission.QuizCompleteAnalyzer.Worker` | Background Worker | Detecta conclusão de quizzes com score mínimo e conclui missões Quiz |
 | `Quiz.Benefit.Worker` | Background Worker | Processa benefícios (gamificação) para quizzes completados |
